@@ -31,12 +31,12 @@ class BotActions:
         try:
             if multiple:
                 logger.debug(f"Finding multiple elements: {by}={value}")
-                return WebDriverWait(driver, 20).until(
+                return WebDriverWait(driver, 10).until(
                     EC.presence_of_all_elements_located((by, value))
                 )
             else:
                 logger.debug(f"Finding single element: {by}={value}")
-                return WebDriverWait(driver, 20).until(
+                return WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((by, value)))
         except Exception as e:
             logger.error(f"Element not found: {by}={value}. Error: {e}")
@@ -49,12 +49,14 @@ class BotActions:
         :param driver: Selenium WebDriver instance.
         :param element: WebElement to scroll to.
         """
-        try:
-            logger.debug("Scrolling to element...")
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
-        except Exception as e:
-            logger.error(f"Failed to scroll to element. Error: {e}")
-            raise
+        if element:
+            try:
+                logger.debug("Scrolling to element...")
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+            except Exception as e:
+                logger.error(f"Failed to scroll to element. Error: {e}")
+                raise
+
 
     def click_element(self, driver, by, value):
         """
@@ -68,7 +70,7 @@ class BotActions:
 
         try:
             # Wait for the element to be clickable
-            element = WebDriverWait(driver, 20).until(
+            element = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((by, value))
             )
 
@@ -82,7 +84,7 @@ class BotActions:
             if element.is_displayed() and element.is_enabled():
                 logger.info(f"Clicking element: {by}={value}")
                 element.click()
-                time.sleep(20)
+                time.sleep(2)
                 logger.info(f"Clicked element: {by}={value}")
             else:
                 raise Exception("Element is not visible or enabled")
@@ -139,7 +141,7 @@ class BotActions:
             return parent_element.find_element(by, value)
         except Exception as e:
             logger.error(f"Child element not found: {by}={value}. Error: {e}")
-            raise
+            
 
     def type_in_element(self, driver, by, value, text):
         element = self.get_element(driver, by, value)

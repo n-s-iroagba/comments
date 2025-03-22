@@ -52,19 +52,21 @@ job = {
     },
     "target": [
         {
-            "url": "https://www.facebook.com/marvinachi",  
-            "required_number_of_replies": 1, 
+            "url": "https://www.facebook.com/marvinachi",
+            'name':'Marvin Achi',
+            "number_of_replies": 7, 
             "replies": [ 
-                "Chai!",
-                # "We appreciate your feedback!",
-                # "Glad you liked our post!",
-                # "Stay tuned for more updates!",
-                # "Have a great day!"
+               
+                "We appreciate your feedback!",
+                "Glad you liked our post!",
+                "Stay tuned for more updates!",
+                "Have a great day!"
             ]
         },
         {
             "url": "https://web.facebook.com/enews",
-            "required_number_of_replies": 3,
+            "number_of_replies": 3,
+            'name': 'E news',
             "replies": [
                 "Interesting perspective!",
                 "Thanks for sharing your thoughts!",

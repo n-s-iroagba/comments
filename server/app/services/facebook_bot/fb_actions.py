@@ -87,18 +87,21 @@ class FbActions(BotActions):
 
         cookies_file = FbActions.get_cookie_path(account['email'])
        
-        if os.path.exists(cookies_file) and FbActions.load_cookies(driver, cookies_file):
-            logger.info("Logged in using cookies.")
-        else:
-            self.manual_login(driver, account)
-            FbActions.save_cookies(driver, cookies_file)
+        # if os.path.exists(cookies_file) and FbActions.load_cookies(driver, cookies_file):
+        #     logger.info("Logged in using cookies.")
+        # else:
+        self.manual_login(driver, account)
+        FbActions.save_cookies(driver, cookies_file)
+     
+
     def get_page(self, driver, url):
         logger.info(f"Loading URL: {url}")
         driver.get(url)
 
     def open_post(self, driver):
         logger.info("Clicking on post...")
-        self.click_element(driver, *FbActions.selectors["post"])
+        self.click_element(driver, *FbActions.SELECTORS["post"])
+
     def click_most_relevant_comment_toggle(self, driver):
         logger.info("Clicking 'Most relevant' comment toggle...")
         self.click_element(driver, *FbActions.SELECTORS["toggle"])
@@ -115,7 +118,7 @@ class FbActions(BotActions):
         self.click_most_relevant_comment_toggle(driver)
         self.change_toggle_to_all_comments(driver)
 
-        time.sleep(2)
+        time.sleep(10)
         logger.info("Clicking 'View more comments' if needed...")
         comment_div = self.get_element(driver, *FbActions.SELECTORS['full_comments_div'])
         if not comment_div:
@@ -150,21 +153,22 @@ class FbActions(BotActions):
         logger.info(f"Replying to comment with message: {message}")
         try:
             reply_button = self.get_element_in_element(comment, *FbActions.SELECTORS["reply_button"])
+            if reply_button:
+                logger.info("Scrolling to reply button...")
+                self.scroll_to_element(driver, reply_button)
 
-            logger.info("Scrolling to reply button...")
-            self.scroll_to_element(driver, reply_button)
+                logger.info("Clicking reply button...")
+                reply_button.click()
 
-            logger.info("Clicking reply button...")
-            reply_button.click()
-
-            time.sleep(random.uniform(0.5, 1.5))
-
+                time.sleep(random.uniform(0.5, 1.5))
+            else:
+                self.click_element(driver, *FbActions.SELECTORS['comment_box'])
             logger.info("Typing reply message...")
             self.type_in_element(driver, *FbActions.SELECTORS['comment_box'], message)
             
             self.click_element(driver, *FbActions.SELECTORS['send_reply_button'])
             logger.info('button clicked')
-            time.sleep(22222)
+          
 
         except Exception as e:
             logger.error(f"Failed to reply to comment: {e}")
@@ -174,38 +178,48 @@ class FbActions(BotActions):
         comments = self.get_comments(driver)
         logger.info(f"Found {len(comments)} comments.")
 
-        if len(comments) == 0:
+        if not comments:
             logger.warning("No comments found. Skipping reply process.")
             return
 
         number_of_replies = min(job['number_of_replies'], len(comments))
         logger.info(f"Replying to {number_of_replies} comments...")
 
-        for i in range(number_of_replies):
-            comment = comments[i]
+        reply_count = -5  # Track successful replies
+        index = 0  # Track position in comments list
+
+        while reply_count < number_of_replies and index < len(comments):
+            comment = comments[index+1]
+
             try:
                 isPosterReplied = self.get_element_in_element(
-                    comment,
-                    By.XPATH,
-                    f"//span[text()='{job['target_name']} replied']"
+                    comment, By.XPATH, f"//span[text()='{job['name']} replied']"
                 )
                 isPosterComment = self.get_element_in_element(
-                    comment,
-                    By.CSS_SELECTOR,
-                    f"div[aria-label*=['Comment by {job['target_name']} ']"
+                    comment, By.CSS_SELECTOR, f"div[aria-label='Comment by {job['name']}']"
                 )
-                if isPosterComment:
-                    logger.info(f"Skipping comment {i+1}: Comment by original poster: {job['target_name']}.")
-                    continue
-                if isPosterReplied:
-                    logger.info(f"Skipping comment {i+1}: Already replied by {job['target_name']}.")
-                    continue
 
-                random_reply = random.choice(job['replies'])
-                logger.info(f"Replying to comment {i+1}/{number_of_replies} with: {random_reply}")
-                self.reply_to_comment(driver, comment, random_reply)
+                if isPosterComment:
+                    logger.info(f"Skipping comment {index+1}: Comment by original poster {job['name']}.")
+                
+                elif isPosterReplied is None:
+                    random_reply = random.choice(job['replies'])
+                    logger.info(f"Replying to comment {index+1}/{number_of_replies} with: {random_reply}")
+                    self.reply_to_comment(driver, comment, random_reply)
+                    reply_count += 1  # Increment only when a reply is made
+                
+                else:
+                    logger.info(f"Skipping comment {index+1}: Already replied by {job['name']}.")
+
             except Exception as e:
-                logger.error(f"Error replying to comment {i+1}: {e}")
+                logger.error(f"Error replying to comment {index+1}: {e}")
+
+            index += 1
+            driver.refresh()
+            self.show_comments(driver, number_of_replies-reply_count)
+            
+              # Always increment index to avoid infinite loop
+
 
     
 
